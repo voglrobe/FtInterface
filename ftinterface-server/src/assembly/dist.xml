@@ -1,0 +1,35 @@
+<assembly>
+    <id>bin</id>
+    <formats>
+        <format>tar.gz</format>
+    </formats>
+    
+    <!-- dependencies (includes artifact) -->
+    <dependencySets>
+        <dependencySet>
+            <unpack>false</unpack>
+            <scope>runtime</scope>
+            <outputDirectory>lib</outputDirectory>
+        </dependencySet>
+    </dependencySets>
+    
+    <fileSets>
+       <fileSet>
+          <directory>${project.build.directory}/site</directory>
+          <outputDirectory>/</outputDirectory>
+          <includes>
+             <include>*</include>
+          </includes>
+       </fileSet>
+       
+       <fileSet>
+          <directory>${project.build.directory}/scripts</directory>
+          <outputDirectory>/</outputDirectory>
+          <includes>
+             <include>*</include>
+          </includes>
+          <fileMode>0755</fileMode>
+       </fileSet>
+    </fileSets>    
+
+</assembly>

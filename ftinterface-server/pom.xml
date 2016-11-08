@@ -1,0 +1,111 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+   
+    <name>ftinterface-server</name>
+    <groupId>de.voglrobe.ftinterface</groupId>
+    <artifactId>ftinterface-server</artifactId>
+    <version>1.1</version>
+    <packaging>jar</packaging>
+   
+    <!-- The parent of this child project -->
+    <parent>
+        <artifactId>FtInterface</artifactId>
+        <groupId>de.voglrobe.ftinterface</groupId>
+        <version>2.3</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <profiles>
+    </profiles>
+
+    <build>
+        <finalName>${project.artifactId}</finalName>
+        
+        <resources>
+            <!-- Standard resources -->
+            <resource>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>**/*</include>
+                </includes>
+            </resource>
+
+            <!-- Filtered resources -->        
+            <resource>
+                <directory>src/main/scripts</directory>
+                <filtering>true</filtering>
+                <targetPath>${project.build.directory}/scripts</targetPath>
+            </resource>
+
+            <resource>
+                <directory>src/site</directory>
+                <filtering>true</filtering>
+                <targetPath>${project.build.directory}/site</targetPath>
+            </resource>
+        </resources>
+        
+        
+        <plugins>      
+            <!-- Build executable JAR -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.6</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <mainClass>de.voglrobe.ftinterface.server.FtServer</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+         
+            <!-- Build distributable tarball -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.4</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <finalName>${project.artifactId}</finalName>
+                            <descriptors>
+                                <descriptor>src/assembly/dist.xml</descriptor>
+                            </descriptors>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>            
+    </build>
+   
+    <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.sparkjava</groupId>
+            <artifactId>spark-core</artifactId>
+            <version>2.3</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ftinterface-base</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ftinterface-core</artifactId>
+        </dependency>
+    </dependencies>
+</project>
+
+
