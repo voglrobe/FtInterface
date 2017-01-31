@@ -1,7 +1,9 @@
 package de.voglrobe.ftinterface;
 
 import de.voglrobe.ftinterface.async.MccExecutorThread;
+import de.voglrobe.ftinterface.async.SequenceLockHelper;
 import de.voglrobe.ftinterface.exceptions.ComException;
+import de.voglrobe.ftinterface.io.FtInputsFlags;
 import de.voglrobe.ftinterface.io.FtOutput;
 import de.voglrobe.ftinterface.io.FtSerialPortSenderReceiver;
 import de.voglrobe.ftinterface.io.IFtInputReceiver;
@@ -18,6 +20,7 @@ public class FtInterfaceAsync
 {
     private final Lock lock = new ReentrantLock();
     private FtSerialPortSenderReceiver senderReceiver;
+    
     private volatile FtOutput interruptAction;
     
     private MccExecutorThread mccExecutor = null;
@@ -119,6 +122,24 @@ public class FtInterfaceAsync
      */
     public void send(final FtOutput output) throws ComException
     {
+        this.send(output, true);
+    }
+            
+    /**
+     * Sends a MCC to the interface and returns immediately.
+     * May block if the RS232 TX Buffer has not enough free space.
+     * <p>
+     * Stepping commands are not interruptible.
+     * <p>
+     * This method is locked as long as other send()-methods are being executed.
+     * 
+     * @param output The MCC to send.
+     * @param syncLock If TRUE a Sync-Lock is set. A Sync-Lock blocks any following send-with-duration
+     * until the ISB of this MCC has been received.
+     * @throws ComException in case of errors.
+     */
+    public void send(final FtOutput output, final boolean syncLock) throws ComException
+    {
         if (output == null)
         {
             throw new IllegalArgumentException("No output data to send.");
@@ -131,6 +152,10 @@ public class FtInterfaceAsync
         }
         try
         {
+            if (syncLock)
+            {
+                SequenceLockHelper.INSTANCE.addSeqNr(output.getSeqNr());
+            }
             this.senderReceiver.send(output.bytes());
         }
         finally
@@ -168,6 +193,9 @@ public class FtInterfaceAsync
         }
         
         lock.lock();
+        
+        // blocks until a previous async MCC has been finished (by received ISB).
+        SequenceLockHelper.INSTANCE.check();
         this.interruptAction = null;
         try
         {
@@ -176,10 +204,10 @@ public class FtInterfaceAsync
             {
                 if (this.interruptAction != null)
                 {
-                    this.send(interruptAction);
+                    this.send(interruptAction, false);
                     break;
                 }
-                this.send(output);
+                this.send(output, false);
                 try
                 {
                     Thread.sleep(200);
@@ -189,6 +217,12 @@ public class FtInterfaceAsync
                 }
             }
             while(System.currentTimeMillis() < stop);
+
+            // 'durationFinished' flag for the final ISB.
+            FtInputsFlags flags = new FtInputsFlags();
+            flags.setDurationFinished(true);
+            this.senderReceiver.setServerFlags(flags);
+            this.send(output, false);
         }
         finally
         {

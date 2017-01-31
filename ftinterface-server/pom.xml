@@ -5,14 +5,14 @@
     <name>ftinterface-server</name>
     <groupId>de.voglrobe.ftinterface</groupId>
     <artifactId>ftinterface-server</artifactId>
-    <version>1.1</version>
+    <version>1.2-SNAPSHOT</version>
     <packaging>jar</packaging>
    
     <!-- The parent of this child project -->
     <parent>
         <artifactId>FtInterface</artifactId>
         <groupId>de.voglrobe.ftinterface</groupId>
-        <version>2.3</version>
+        <version>2.4-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -31,6 +31,13 @@
                 </includes>
             </resource>
 
+            <!-- UNfiltered resources -->        
+            <resource>
+                <directory>src/binaries</directory>
+                <filtering>false</filtering>
+                <targetPath>${project.build.directory}/binaries</targetPath>
+            </resource>
+            
             <!-- Filtered resources -->        
             <resource>
                 <directory>src/main/scripts</directory>
@@ -43,6 +50,7 @@
                 <filtering>true</filtering>
                 <targetPath>${project.build.directory}/site</targetPath>
             </resource>
+            
         </resources>
         
         

@@ -44,4 +44,48 @@ public class FtInputsTest
         Assert.assertFalse(digitalInList.get(6));
         Assert.assertFalse(digitalInList.get(7));
     }
+
+    @Test
+    public void testToJsonWithFlags() throws Exception
+    {
+        FtInputs inputs = new FtInputs(63, 64, 231, 255);
+        FtInputsFlags flags = new FtInputsFlags();
+        flags.setDurationFinished(true);
+        inputs.setFlags(flags);
+        
+        String json = inputs.toJson();
+        System.out.println(json);       
+    }
+
+    @Test
+    public void testFromJsonWithFlags() throws Exception
+    {
+        String json = "{\"seqnr\":63,\"di\":[false,true,false,false,false,false,false,false],\"ex\":231,\"ey\":255"
+                + ",\"flags\":{\"durationFinished\":true}}";
+        
+        FtInputs inputs = FtInputs.fromJson(json);
+        Assert.assertNotNull(json);
+        
+        Assert.assertEquals(63, inputs.getSeqNr());
+        Assert.assertEquals(231, inputs.getEx());
+        Assert.assertEquals(255, inputs.getEy());
+        
+        List<Boolean> digitalInList = inputs.getDigitalIn();
+        Assert.assertEquals(8, digitalInList.size());
+        
+        Assert.assertTrue(inputs.getDigitalIn(FtInputs.IN.E2));
+        
+        Assert.assertFalse(digitalInList.get(0));
+        Assert.assertFalse(digitalInList.get(2));
+        Assert.assertFalse(digitalInList.get(3));
+        Assert.assertFalse(digitalInList.get(4));
+        Assert.assertFalse(digitalInList.get(5));
+        Assert.assertFalse(digitalInList.get(6));
+        Assert.assertFalse(digitalInList.get(7));
+        
+        Assert.assertNotNull(inputs.getFlags());
+        FtInputsFlags flags = inputs.getFlags();
+        Assert.assertTrue(flags.isDurationFinished());
+    }
+
 }

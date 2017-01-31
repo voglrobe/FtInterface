@@ -140,6 +140,16 @@ public class FtSerialPortSenderReceiver
     }
     
     /**
+     * Set the server flags to be appended to the incoming ISBs.
+     * 
+     * @param flags The server flags to append. 
+     */
+    public void setServerFlags(final FtInputsFlags flags)
+    {
+        this.serialReceiverThread.setFlags(flags);
+    }
+    
+    /**
      * Stopps the communication with the interface adapter and blocks until the corresponding thread has been properly terminated.
      */
     private void stopReceiverThread()

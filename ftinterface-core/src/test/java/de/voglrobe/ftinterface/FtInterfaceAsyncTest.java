@@ -1,8 +1,10 @@
 package de.voglrobe.ftinterface;
 
 import de.voglrobe.ftinterface.io.FtInputs;
+import de.voglrobe.ftinterface.io.FtInputsFlags;
 import de.voglrobe.ftinterface.io.FtOutput;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import junit.framework.Assert;
 
 /**
@@ -258,6 +260,36 @@ public class FtInterfaceAsyncTest
             System.out.println("--> test mark 3");
 
             iface.softInterrupt(outputOff);           
+        }
+        finally
+        {
+            iface.destroy();
+        }
+    }
+    
+    // @Test
+    public void testCheckFlags_1() throws Exception
+    {
+        final FtInterfaceAsync iface = FtInterfaceAsync.newInstance(PORT);
+        CountDownLatch latch = new CountDownLatch(1);
+        
+        iface.setInputReceiver((final FtInputs inputs)-> 
+        {
+            System.out.println(inputs.toJson());
+            FtInputsFlags flags = inputs.getFlags();
+            if (flags != null && flags.isDurationFinished())
+            {
+                System.out.println("Received Flag: 'durationFinished.");
+                latch.countDown();
+            }
+        });
+
+        try
+        {
+            final FtOutput outputM2 = new FtOutput().m2(FtOutput.Direction.ON);
+
+            iface.send(outputM2, 5);
+            latch.await(8, TimeUnit.SECONDS);
         }
         finally
         {

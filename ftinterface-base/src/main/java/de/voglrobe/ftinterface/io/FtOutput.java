@@ -151,6 +151,16 @@ public class FtOutput
     }
     
     /**
+     * Gets the current sequence number.
+     * 
+     * @return The sequence number.
+     */
+    public int getSeqNr()
+    {
+        return seqNr;
+    }
+    
+    /**
      * Run motor M1 in the given turn direction for the given number of steps.
      * 
      * @param direction The commanded turn direction.

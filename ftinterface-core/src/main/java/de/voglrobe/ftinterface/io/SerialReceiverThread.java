@@ -1,5 +1,6 @@
 package de.voglrobe.ftinterface.io;
 
+import de.voglrobe.ftinterface.async.SequenceLockHelper;
 import gnu.io.SerialPort;
 import gnu.io.UnsupportedCommOperationException;
 import java.io.IOException;
@@ -20,7 +21,8 @@ public class SerialReceiverThread extends AbstractSerialReceiverThread
 
     private static final int PORT_RECEIVE_TIMEOUT = 2000; // 2 secs
 
-    private IFtInputReceiver callback;   
+    private IFtInputReceiver callback;
+    private volatile FtInputsFlags flags;
     private volatile boolean stopped;
 
     /**
@@ -96,6 +98,13 @@ public class SerialReceiverThread extends AbstractSerialReceiverThread
         super(serPort);
         this.callback = callback;
         this.stopped = false;
+        this.flags = null;
+    }
+
+    @Override
+    public void setFlags(final FtInputsFlags flags)
+    {
+        this.flags = flags;
     }
     
     @Override
@@ -104,6 +113,7 @@ public class SerialReceiverThread extends AbstractSerialReceiverThread
         LOGGER.log(Level.INFO, "Stopping SerialReceiverThread...");
         this.stopped = true;
         this.callback = null;
+        SequenceLockHelper.INSTANCE.flush();
     }
     
     @Override
@@ -178,7 +188,13 @@ public class SerialReceiverThread extends AbstractSerialReceiverThread
             int di = decodeManchester(isbs.get(1), isbs.get(2));
             int ex = decodeManchester(isbs.get(3), isbs.get(4));
             int ey = decodeManchester(isbs.get(5), isbs.get(6));
-            callback.onDataReceived(new FtInputs(seqNr, di, ex, ey));
+            
+            SequenceLockHelper.INSTANCE.removeSeqNr(seqNr);
+            FtInputs inputs = new FtInputs(seqNr, di, ex, ey);
+            inputs.setFlags(flags);
+            
+            callback.onDataReceived(inputs);
+            flags = null;
         }
         catch(NumberFormatException e)
         {

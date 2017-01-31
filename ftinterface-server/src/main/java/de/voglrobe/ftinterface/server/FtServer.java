@@ -19,6 +19,7 @@ import java.util.logging.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import static spark.Spark.init;
 import static spark.Spark.port;
+import static spark.Spark.secure;
 import static spark.Spark.stop;
 import static spark.Spark.webSocket;
 
@@ -43,9 +44,12 @@ public class FtServer
     // Configuration property keys
     private static final String PROP_KEY_WEBSOCKET_PORT = "de.voglrobe.ftserver.websocket.port";
     private static final String PROP_SERIAL_DEVICE_NAME = "de.voglrobe.ftserver.serial.devicename";
+    private static final String PROP_DRYRUN             = "de.voglrobe.ftserver.dryrun";
+    
 
     private static final List<Session> SESSIONS = new ArrayList<>();
     private static FtInterfaceAsync IFACE = null;
+    private static boolean IS_DRYRUN = false;
     
     private final Properties props;
     
@@ -67,6 +71,16 @@ public class FtServer
     public static List<Session> getSessions()
     {
         return SESSIONS;
+    }
+    
+    /**
+     * Returns whether the server is in dry-run mode.
+     * 
+     * @return TRUE if server is in dry-run mode. 
+     */
+    public static boolean isDryRun()
+    {
+        return IS_DRYRUN;
     }
     
     /**
@@ -115,17 +129,27 @@ public class FtServer
     {
         // Configurable options
         final int webSocketPort = Integer.parseInt(this.props.getProperty(PROP_KEY_WEBSOCKET_PORT, "9091"));
-        LOGGER.log(Level.INFO, "WebSocket port: {0}", String.valueOf(webSocketPort));
+        LOGGER.log(Level.INFO, "WebSocket URL: ws://localhost:{0}/ftinterface", String.valueOf(webSocketPort));
         
         final String serialDeviceName = this.props.getProperty(PROP_SERIAL_DEVICE_NAME, "/dev/ttyACM0");
         LOGGER.log(Level.INFO, "Serial device name: {0}", serialDeviceName);
         
+        IS_DRYRUN = Boolean.parseBoolean(this.props.getProperty(PROP_DRYRUN, "false"));
+        LOGGER.log(Level.INFO, "Dry-run: {0}", String.valueOf(IS_DRYRUN));
+        
+        final String keystore = System.getProperty("keystore.file");
+        LOGGER.log(Level.INFO, "SSL-Keystore: {0}", keystore);
+        
+        
         // Init interface
         final BlockingQueue<FtInputs> isbQueue = new LinkedBlockingQueue<>();
-        FtServer.IFACE = FtInterfaceAsync.newInstance(serialDeviceName, (final FtInputs inputs)->
+        if (!IS_DRYRUN)
         {
-            isbQueue.offer(inputs);
-        });
+            FtServer.IFACE = FtInterfaceAsync.newInstance(serialDeviceName, (final FtInputs inputs)->
+            {
+                isbQueue.offer(inputs);
+            });
+        }
 
         // Start ISB Thread
         final ISBThread isbThread = new ISBThread(isbQueue);
@@ -133,6 +157,10 @@ public class FtServer
 
         // Open WebSocket
         port(webSocketPort);
+        if (keystore != null)
+        {
+            secure(keystore, "", null, null);
+        }
         webSocket("/ftinterface", FtWebSocket.class);
         init();
 
@@ -161,7 +189,10 @@ public class FtServer
         }
         
         // Stop interface
-        FtServer.IFACE.destroy();
+        if (!IS_DRYRUN)
+        {
+            FtServer.IFACE.destroy();
+        }
     }
     
     /**

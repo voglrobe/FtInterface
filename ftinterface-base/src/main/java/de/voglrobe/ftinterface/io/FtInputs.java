@@ -22,6 +22,9 @@ public class FtInputs
     private final List<Boolean> digitalIn = new ArrayList<>();
     private final int ex;
     private final int ey;
+    
+    @SerializedName("flags")    
+    private FtInputsFlags flags;
 
     /**
      * The digital input names.
@@ -116,6 +119,27 @@ public class FtInputs
     {
         return ey;
     }
+
+    /**
+     * Returns the optional server flags.
+     * 
+     * @return the optional server flags or NULL if not set.
+     */
+    public FtInputsFlags getFlags()
+    {
+        return flags;
+    }
+
+    /**
+     * Sets the optional server flags.
+     * 
+     * @param flags optional server flags.
+     */
+    public void setFlags(final FtInputsFlags flags)
+    {
+        this.flags = flags;
+    }
+  
     
     /**
      * Compares the states of this digital inputs with the states of given digital inputs.
@@ -166,6 +190,7 @@ public class FtInputs
         hcb.append(this.getDigitalIn());
         hcb.append(this.getEx());
         hcb.append(this.getEy());
+        hcb.append(this.getFlags());
         return hcb.toHashCode();
     }
 
@@ -182,6 +207,7 @@ public class FtInputs
         eqb.append(this.getDigitalIn(), rhs.getDigitalIn());
         eqb.append(this.getEx(), rhs.getEx());
         eqb.append(this.getEy(), rhs.getEy());
+        eqb.append(this.getFlags(), rhs.getFlags());
         return eqb.isEquals();        
     }
 

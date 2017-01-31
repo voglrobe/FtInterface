@@ -24,6 +24,13 @@ public abstract class AbstractSerialReceiverThread extends Thread
     
     @Override
     abstract public void run();
+    
+    /**
+     * Sets server flags to be appended to the responding ISBs.
+     * 
+     * @param flags The server flags to be appended to the responding ISBs. 
+     */
+    abstract public void setFlags(final FtInputsFlags flags);
 
     /**
      * Must be called at the end of the life-cycle to request this thread to terminate.

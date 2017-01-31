@@ -25,5 +25,5 @@ set TEN=%~1
 set ELEVEN=%~2
 set TWELVE=%~3
 
-%JAVA% -Dconfig=./Application.properties -Djava.util.logging.config.file=./logging.properties -jar ./lib/ftinterface-server-${project.version}.jar %ONE% %TWO% %THREE% %FOUR% %FIVE% %SIX%
+%JAVA% -Dconfig=./Application.properties -Djava.util.logging.config.file=./logging.properties -Dkeystore.file=./keystore.jks -jar ./lib/ftinterface-server-${project.version}.jar %ONE% %TWO% %THREE% %FOUR% %FIVE% %SIX%
 

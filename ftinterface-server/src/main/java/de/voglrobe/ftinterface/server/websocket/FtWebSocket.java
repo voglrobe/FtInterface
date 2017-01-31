@@ -1,9 +1,11 @@
 package de.voglrobe.ftinterface.server.websocket;
 
 import com.google.gson.JsonSyntaxException;
+import de.voglrobe.ftinterface.FtInterfaceAsync;
 import de.voglrobe.ftinterface.exceptions.ComException;
 import de.voglrobe.ftinterface.io.FtMccMessage;
 import de.voglrobe.ftinterface.server.FtServer;
+import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.eclipse.jetty.websocket.api.Session;
@@ -21,6 +23,21 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 public class FtWebSocket
 {
     private static final Logger LOGGER = Logger.getLogger(FtWebSocket.class.getName());
+    
+    private static final String DRY_RUN_MSG = 
+            "{\"seqnr\": %d, \"di\": [false, true, false, false, false, false, false, false], \"ex\": 231, \"ey\": 255"
+            + ", \"flags\":{\"durationFinished\": true}}";
+    
+    private final FtInterfaceAsync ftInterface;
+    
+    /**
+     * Constructor.
+     */
+    public FtWebSocket()
+    {
+        super();
+        this.ftInterface = FtServer.getFtInterface();
+    }
     
     /**
      * Called on connection opened.
@@ -68,33 +85,46 @@ public class FtWebSocket
     @OnWebSocketMessage
     public void onMessage(final Session session, final String message)
     {
-        if (message == null || FtServer.getFtInterface() == null)
+        LOGGER.log(Level.INFO, "WebSocket message received: {0}.", message);
+        if (message == null)
         {
             return;
         }
-        LOGGER.log(Level.INFO, "WebSocket message received: {0}.", message);
         
         try
         {
             FtMccMessage ftMessage = FtMccMessage.fromJson(message);
-            int duration = ftMessage.getDuration();
-            if (duration > 0)
+            if (FtServer.isDryRun())
             {
-                // blocking!!
-                FtServer.getFtInterface().send(ftMessage.getMcc(), duration);                
+                session.getRemote().sendString(String.format(DRY_RUN_MSG, ftMessage.getMcc().getSeqNr()));
+                return;
             }
-            else if (duration == 0)
+            
+            if (ftInterface != null)
             {
-                FtServer.getFtInterface().send(ftMessage.getMcc());                
-            }
-            else
-            {
-                FtServer.getFtInterface().sendInfinite(ftMessage.getMcc());
+                int duration = ftMessage.getDuration();
+                if (duration > 0)
+                {
+                    // blocking!!
+                    ftInterface.send(ftMessage.getMcc(), duration);                
+                }
+                else if (duration == 0)
+                {
+                    ftInterface.send(ftMessage.getMcc());                
+                }
+                else
+                {
+                    ftInterface.sendInfinite(ftMessage.getMcc());
+                }
             }
         }
         catch(JsonSyntaxException e)
         {
             LOGGER.log(Level.SEVERE, "Invalid JSON message received.", e);            
+        }
+        catch (IOException e)
+        {
+            LOGGER.log(Level.SEVERE, "Return response message in dry-run failed", e);
         }
         catch(ComException e)
         {
