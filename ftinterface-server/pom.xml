@@ -5,14 +5,14 @@
     <name>ftinterface-server</name>
     <groupId>de.voglrobe.ftinterface</groupId>
     <artifactId>ftinterface-server</artifactId>
-    <version>1.2-SNAPSHOT</version>
+    <version>1.2</version>
     <packaging>jar</packaging>
    
     <!-- The parent of this child project -->
     <parent>
         <artifactId>FtInterface</artifactId>
         <groupId>de.voglrobe.ftinterface</groupId>
-        <version>2.4-SNAPSHOT</version>
+        <version>2.4</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 

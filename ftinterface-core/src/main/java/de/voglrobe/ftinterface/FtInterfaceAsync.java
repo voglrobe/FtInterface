@@ -20,10 +20,10 @@ public class FtInterfaceAsync
 {
     private final Lock lock = new ReentrantLock();
     private FtSerialPortSenderReceiver senderReceiver;
+    private MccExecutorThread mccExecutor;
     
     private volatile FtOutput interruptAction;
     
-    private MccExecutorThread mccExecutor = null;
     
     /**
      * A factory to create a new instance of this class.
@@ -66,6 +66,7 @@ public class FtInterfaceAsync
     {
         this.senderReceiver = null;
         this.interruptAction = null;
+        this.mccExecutor = null;
     }
 
     /**
@@ -79,6 +80,10 @@ public class FtInterfaceAsync
     {
         this.senderReceiver = FtSerialPortSenderReceiver.newInstance(port);
         senderReceiver.setInputReceiver(inputReceiver);
+        
+        // start Runnable with new MCC.
+        this.mccExecutor = new MccExecutorThread(senderReceiver);
+        this.mccExecutor.start();
     }
 
     /**
@@ -88,7 +93,7 @@ public class FtInterfaceAsync
      */
     public void destroy()
     {
-        this.stopMccExecutor();
+        this.terminateMccExecutor();
         if (senderReceiver != null)
         {
             senderReceiver.destroy();
@@ -122,7 +127,7 @@ public class FtInterfaceAsync
      */
     public void send(final FtOutput output) throws ComException
     {
-        this.send(output, true);
+        this.send(output, true, null);
     }
             
     /**
@@ -136,9 +141,10 @@ public class FtInterfaceAsync
      * @param output The MCC to send.
      * @param syncLock If TRUE a Sync-Lock is set. A Sync-Lock blocks any following send-with-duration
      * until the ISB of this MCC has been received.
+     * @param flags Optional flags for the sender and receiver or NULL.
      * @throws ComException in case of errors.
      */
-    public void send(final FtOutput output, final boolean syncLock) throws ComException
+    public void send(final FtOutput output, final boolean syncLock, final FtInputsFlags flags) throws ComException
     {
         if (output == null)
         {
@@ -146,17 +152,14 @@ public class FtInterfaceAsync
         }
         
         lock.lock();
-        if (mccExecutor != null)
-        {
-            this.stopMccExecutor();
-        }
+        this.mccExecutor.pause();
         try
         {
             if (syncLock)
             {
                 SequenceLockHelper.INSTANCE.addSeqNr(output.getSeqNr());
             }
-            this.senderReceiver.send(output.bytes());
+            this.senderReceiver.send(output.bytes(), flags);
         }
         finally
         {
@@ -204,10 +207,10 @@ public class FtInterfaceAsync
             {
                 if (this.interruptAction != null)
                 {
-                    this.send(interruptAction, false);
+                    this.send(interruptAction, false, null);
                     break;
                 }
-                this.send(output, false);
+                this.send(output, false, null);
                 try
                 {
                     Thread.sleep(200);
@@ -221,8 +224,7 @@ public class FtInterfaceAsync
             // 'durationFinished' flag for the final ISB.
             FtInputsFlags flags = new FtInputsFlags();
             flags.setDurationFinished(true);
-            this.senderReceiver.setServerFlags(flags);
-            this.send(output, false);
+            this.send(output, false, flags);
         }
         finally
         {
@@ -258,12 +260,11 @@ public class FtInterfaceAsync
         lock.lock();
         try
         {
-            // stop Runnable of old MCC.
-            this.stopMccExecutor();
+            // pause Runnable of old MCC.
+            this.mccExecutor.pause();
             
-            // start Runnable with new MCC.
-            this.mccExecutor = new MccExecutorThread(senderReceiver, output);
-            this.mccExecutor.start();
+            // resume with new MCC.
+            this.mccExecutor.activate(output);
         }
         finally
         {
@@ -292,11 +293,11 @@ public class FtInterfaceAsync
             }
         }
     }
-    
+
     /**
      * Stopp and eliminate a running MCC executor.
      */
-    private synchronized void stopMccExecutor()
+    private synchronized void terminateMccExecutor()
     {
         if (mccExecutor != null)
         {

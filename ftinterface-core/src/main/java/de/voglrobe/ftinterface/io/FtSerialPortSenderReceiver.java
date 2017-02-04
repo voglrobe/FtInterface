@@ -140,16 +140,6 @@ public class FtSerialPortSenderReceiver
     }
     
     /**
-     * Set the server flags to be appended to the incoming ISBs.
-     * 
-     * @param flags The server flags to append. 
-     */
-    public void setServerFlags(final FtInputsFlags flags)
-    {
-        this.serialReceiverThread.setFlags(flags);
-    }
-    
-    /**
      * Stopps the communication with the interface adapter and blocks until the corresponding thread has been properly terminated.
      */
     private void stopReceiverThread()
@@ -191,6 +181,19 @@ public class FtSerialPortSenderReceiver
      */
     public void send(byte[] bytes) throws ComException
     {
+        this.send(bytes, null);
+    }
+    
+    /**
+     * Sends the given data to the interface adapter and returns immediately.
+     * May block if there is not enough space in the RS232 TX Buffer.
+     * 
+     * @param bytes The bytes to send.
+     * @param flags Optional flags for the sender or receiver.
+     * @throws ComException in case of errors.
+     */
+    public void send(byte[] bytes, final FtInputsFlags flags) throws ComException
+    {
         if (bytes == null || bytes.length == 0)
         {
             return;
@@ -200,6 +203,7 @@ public class FtSerialPortSenderReceiver
             throw new ComException("Serial port is not available.");
         }
         
+        this.serialReceiverThread.setFlags(flags);
         try(OutputStream os = this.serialPort.getOutputStream())
         {
             os.write(bytes, 0, bytes.length);

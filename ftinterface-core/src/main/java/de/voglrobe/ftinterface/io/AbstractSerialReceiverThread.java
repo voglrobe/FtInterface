@@ -26,9 +26,9 @@ public abstract class AbstractSerialReceiverThread extends Thread
     abstract public void run();
     
     /**
-     * Sets server flags to be appended to the responding ISBs.
+     * Sets flags for the ISB receiver.
      * 
-     * @param flags The server flags to be appended to the responding ISBs. 
+     * @param flags Flags for the ISB receiver. 
      */
     abstract public void setFlags(final FtInputsFlags flags);
 

@@ -16,23 +16,43 @@ public class MccExecutorThread extends Thread
 {
     private static final Logger LOGGER = Logger.getLogger(MccExecutorThread.class.getName());
     
-    private final FtOutput mcc;
     private final FtSerialPortSenderReceiver ftSenderReceiver;
     
+    private volatile FtOutput mcc;    
     private volatile boolean stopped;
+    private volatile boolean paused;
     
     
     /**
      * Constructor.
      * 
      * @param ftSenderReceiver An object to access of the serial interface.
-     * @param mcc The MCC to execute.
      */
-    public MccExecutorThread(final FtSerialPortSenderReceiver ftSenderReceiver, final FtOutput mcc)
+    public MccExecutorThread(final FtSerialPortSenderReceiver ftSenderReceiver)
     {
         this.ftSenderReceiver = ftSenderReceiver;
+        this.paused = true;
+        this.mcc = null;
         this.stopped = false;
+    }
+    
+    /**
+     * Pauses the Executor from sending MCCs.
+     */
+    public synchronized void pause()
+    {
+        this.paused = true;
+    }
+    
+    /**
+     * Proceeds sending the given MCC. Does nothing if mcc argument is NULL.
+     * 
+     * @param mcc The MCC to send recurrently. 
+     */
+    public synchronized void activate(final FtOutput mcc)
+    {
         this.mcc = mcc;
+        this.paused = false;
     }
     
     /**
@@ -42,13 +62,14 @@ public class MccExecutorThread extends Thread
     public synchronized void terminate()
     {
         LOGGER.log(Level.INFO, "Stopping MccExecutorThread...");
+        this.mcc = null;
         this.stopped = true;
     }
     
     @Override
     public void run()
     {
-        if (ftSenderReceiver == null || mcc == null || stopped)
+        if (ftSenderReceiver == null || stopped)
         {
             return;
         }
@@ -57,7 +78,10 @@ public class MccExecutorThread extends Thread
         {
             try
             {
-                ftSenderReceiver.send(mcc.bytes());
+                if (!paused &&  mcc != null)
+                {
+                    ftSenderReceiver.send(mcc.bytes());
+                }
                 Thread.sleep(200);
             }
             catch(InterruptedException dontcare)

@@ -188,17 +188,19 @@ public class SerialReceiverThread extends AbstractSerialReceiverThread
             int di = decodeManchester(isbs.get(1), isbs.get(2));
             int ex = decodeManchester(isbs.get(3), isbs.get(4));
             int ey = decodeManchester(isbs.get(5), isbs.get(6));
-            
-            SequenceLockHelper.INSTANCE.removeSeqNr(seqNr);
             FtInputs inputs = new FtInputs(seqNr, di, ex, ey);
             inputs.setFlags(flags);
             
+            SequenceLockHelper.INSTANCE.removeSeqNr(seqNr);
             callback.onDataReceived(inputs);
-            flags = null;
         }
         catch(NumberFormatException e)
         {
             LOGGER.log(Level.SEVERE, "Invalid ISBs received.", e);
+        }
+        finally
+        {
+            this.flags = null;
         }
     }
 
